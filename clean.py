@@ -22,28 +22,41 @@ def cleanup(
     if not isinstance(data, str):
         return data
 
+    if remove_multi_dots:
+        data = re.sub(r'\.{2,}', '.', data)
+
     if remove_weird_chars:
         # Extended list of unwanted characters
         unwanted_chars = [
-            '\n', '\t', '\r', '\v', '\f', '\a', '\b',
-            '\u200b', '\u200c', '\u200d', '\u2060', '\ufeff',
-            '℠', '™', '®', '©', '�'
+            # Control and formatting characters
+            '\n', '\t', '\r', '\v', '\f', '\a', '\b', '\x1C', '\x1D', '\x1E', '\x1F',
+            
+            # Zero-width and invisible characters
+            '\u200b', '\u200c', '\u200d', '\u200e', '\u200f', '\u2060', '\ufeff', 
+            '\u2061', '\u2062', '\u2063', '\u2064', '\u206a', '\u206b', '\u206c',
+            '\u206d', '\u206e', '\u206f',
+            
+            # Special whitespace
+            '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006',
+            '\u2007', '\u2008', '\u2009', '\u200a', '\u2028', '\u2029', '\u202f',
+            '\u205f', '\u3000',
+            
+            # Special characters and symbols
+            '℠', '™', '®', '©', '�', '•', '⁃', '⁎', '‣', '⁕', '⁜', '⁂', '⁋', '‿',
+            '❧', '☙', '➤', '⇒', '⇨', '→', '⟶'
         ]
         for char in unwanted_chars:
             data = data.replace(char, ' ')
 
     if remove_links:
-        # Enhanced URL pattern
-        data = re.sub(r'(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?', '', data, flags=re.IGNORECASE)
+        data = re.sub(r'(?i)\bhttps?:\/\/\S+?\b', '', data)  # Made non-greedy with ?
 
     if remove_emails:
-        # Enhanced email pattern
-        data = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '', data)
+        data = re.sub(r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', '', data)
 
     if remove_phones:
-        # Enhanced phone pattern (international format support)
-        data = re.sub(r'[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}', '', data)
-        data = re.sub(r'[\+]?\d{10,}', '', data)
+        data = re.sub(r'\b[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}\b', '', data)
+        data = re.sub(r'\b[\+]?\d{10,}\b', '', data)
 
     if remove_underscores:
         # Extended list of special characters
@@ -80,15 +93,10 @@ def cleanup(
             data = data.replace(p, '')
 
     if remove_html:
-        # Remove HTML tags
-        data = re.sub(r'<[^>]+>', '', data)
+        data = re.sub(r'<[^>]+?>', '', data)  # Made non-greedy with ?
 
     if remove_latex:
-        # Remove LaTeX commands
-        data = re.sub(r'\\[a-zA-Z]+', '', data)
-
-    if remove_multi_dots:
-        data = re.sub(r'\.{2,}', '.', data)
+        data = re.sub(r'\b\\[a-zA-Z]+\b', '', data)
 
     if remove_extra_spaces:
         # Enhanced whitespace handling
