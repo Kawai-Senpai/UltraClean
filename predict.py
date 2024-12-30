@@ -17,17 +17,33 @@ logging.getLogger('transformers').setLevel(logging.ERROR)
 class Spam:
     def __init__(self, cache_dir=None, device=None):
         self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained("ZachBeesley/Spam-Detector", cache_dir=cache_dir)
         try:
-            self.model = AutoModelForSequenceClassification.from_pretrained("ZachBeesley/Spam-Detector", cache_dir=cache_dir).to(self.device)
-        except EnvironmentError:
+            # First try loading the tokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained("ZachBeesley/Spam-Detector", cache_dir=cache_dir)
+            
+            # Try loading the model directly first
             try:
-                self.model = AutoModelForSequenceClassification.from_pretrained("ZachBeesley/Spam-Detector", cache_dir=cache_dir, from_tf=True).to(self.device)
-            except ValueError as e:
-                if "Keras 3" in str(e):
-                    raise ValueError("Your currently installed version of Keras is Keras 3, but this is not yet supported in Transformers. Please install the backwards-compatible tf-keras package with `pip install tf-keras`.")
-                else:
-                    raise e
+                self.model = AutoModelForSequenceClassification.from_pretrained(
+                    "ZachBeesley/Spam-Detector",
+                    cache_dir=cache_dir
+                ).to(self.device)
+            except Exception as e:
+                # If direct loading fails, try with from_tf=True
+                try:
+                    self.model = AutoModelForSequenceClassification.from_pretrained(
+                        "ZachBeesley/Spam-Detector",
+                        cache_dir=cache_dir,
+                        from_tf=True
+                    ).to(self.device)
+                except Exception as inner_e:
+                    # If both attempts fail, try forcing CPU device
+                    self.device = torch.device("cpu")
+                    self.model = AutoModelForSequenceClassification.from_pretrained(
+                        "ZachBeesley/Spam-Detector",
+                        cache_dir=cache_dir
+                    ).to(self.device)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize the model: {str(e)}\nTry installing tf-keras with 'pip install tf-keras'")
 
     def predict(self, text):
         inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(self.device)
@@ -46,4 +62,3 @@ class Spam:
         spam_scores = probabilities[:, 1].tolist()
         non_spam_sentences = [sentence for sentence, score in zip(sentences, spam_scores) if score <= 0.5]
         return '. '.join(non_spam_sentences)
-
