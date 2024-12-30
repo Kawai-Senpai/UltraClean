@@ -83,7 +83,7 @@ Sample Output:
 
 ```plaintext
 Is the text spam? Yes
-Congratulations! This is not a scam.
+Congratulations! You've won a free trip to Hawaii. This is not a scam.
 ```
 
 ## When to Use
