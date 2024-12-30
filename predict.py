@@ -3,6 +3,7 @@ import torch
 import warnings
 import os
 import logging
+from tqdm import tqdm
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
@@ -53,12 +54,20 @@ class Spam:
         spam_score = probabilities[0][1].item()
         return True if spam_score > 0.5 else False
 
-    def filter(self, paragraph):
+    def filter(self, paragraph, batch_size=16):
         sentences = paragraph.split('. ')
-        inputs = self.tokenizer(sentences, return_tensors="pt", truncation=True, padding=True).to(self.device)
-        outputs = self.model(**inputs)
-        logits = outputs.logits
-        probabilities = torch.softmax(logits, dim=1)
-        spam_scores = probabilities[:, 1].tolist()
-        non_spam_sentences = [sentence for sentence, score in zip(sentences, spam_scores) if score <= 0.5]
+        non_spam_sentences = []
+        
+        # Process sentences in batches with progress bar
+        for i in tqdm(range(0, len(sentences), batch_size), desc="Filtering spam", unit="batch"):
+            batch = sentences[i:i + batch_size]
+            inputs = self.tokenizer(batch, return_tensors="pt", truncation=True, padding=True).to(self.device)
+            outputs = self.model(**inputs)
+            logits = outputs.logits
+            probabilities = torch.softmax(logits, dim=1)
+            spam_scores = probabilities[:, 1].tolist()
+            
+            batch_non_spam = [sentence for sentence, score in zip(batch, spam_scores) if score <= 0.5]
+            non_spam_sentences.extend(batch_non_spam)
+        
         return '. '.join(non_spam_sentences)
