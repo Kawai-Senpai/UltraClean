@@ -2,6 +2,8 @@
 
 UltraClean is a fast and efficient Python library for cleaning and preprocessing text data, specifically designed for AI/ML tasks and data processing.
 
+![UltraClean Thumbnail](https://github.com/Kawai-Senpai/UltraClean/blob/c5d769d553412071e3160a32cf390bf8b90e555e/Assets/UltraClean%20Thumbnail.png)
+
 ## Features
 
 - Remove unwanted characters, links, emails, phone numbers, underscores, unicode characters, emojis, numbers, currencies, punctuation, HTML tags, LaTeX commands, and more.
